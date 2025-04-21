@@ -58,14 +58,22 @@ int ICM42688::begin() {
 		return -4;
 	}
 
-	// 16G is default -- do this to set up accel resolution scaling
-	int ret = setAccelFS(gpm16);
+	int ret = readAccelFS();
 	if (ret < 0) {
 		return ret;
 	}
 
-	// 2000DPS is default -- do this to set up gyro resolution scaling
-	ret = setGyroFS(dps2000);
+	ret = readGyroFS();
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = readAccelODR();
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = readGyroODR();
 	if (ret < 0) {
 		return ret;
 	}
@@ -109,8 +117,7 @@ int ICM42688::setAccelFS(AccelFS fssel) {
 	return 1;
 }
 
-/* get the accelerometer full scale range return the ACCEL_FS_SEL value*/
-int ICM42688::getAccelFS() {
+int ICM42688::readAccelFS() {
 	// use low speed SPI for register setting
 	_useSPIHS = false;
 	setBank(0);
@@ -119,7 +126,11 @@ int ICM42688::getAccelFS() {
 	if (readRegisters(UB0_REG_ACCEL_CONFIG0, 1, &reg) < 0) {
 		return -1;
 	}
-	return (reg & 0xE0) >> 5;
+	
+	_accelFS    = static_cast<AccelFS>((reg & 0xE0) >> 5);
+	_accelScale = static_cast<float>(1 << (4 - _accelFS)) / 32768.0f;
+
+	return 1;
 }
 
 /* sets the gyro full scale range to values other than default */
@@ -148,6 +159,22 @@ int ICM42688::setGyroFS(GyroFS fssel) {
 	return 1;
 }
 
+int ICM42688::readGyroFS() {
+	// use low speed SPI for register setting
+	_useSPIHS = false;
+	setBank(0);
+	// read current register value
+	uint8_t reg;
+	if (readRegisters(UB0_REG_GYRO_CONFIG0, 1, &reg) < 0) {
+		return -1;
+	}
+	
+	_gyroFS     = static_cast<GyroFS>((reg & 0xE0) >> 5);
+	_gyroScale  = (2000.0f / static_cast<float>(1 << _gyroFS)) / 32768.0f;
+
+	return 1;
+}
+
 int ICM42688::setAccelODR(ODR odr) {
 	// use low speed SPI for register setting
 	_useSPIHS = false;
@@ -166,6 +193,23 @@ int ICM42688::setAccelODR(ODR odr) {
 	if (writeRegister(UB0_REG_ACCEL_CONFIG0, reg) < 0) {
 		return -2;
 	}
+
+	_accelODR = static_cast<ODR>(reg & 0x0F);
+
+	return 1;
+}
+
+int ICM42688::readAccelODR() {
+	// use low speed SPI for register setting
+	_useSPIHS = false;
+	setBank(0);
+	// read current register value
+	uint8_t reg;
+	if (readRegisters(UB0_REG_ACCEL_CONFIG0, 1, &reg) < 0) {
+		return -1;
+	}
+	
+	_accelODR = static_cast<ODR>(reg & 0x0F);
 
 	return 1;
 }
@@ -188,6 +232,23 @@ int ICM42688::setGyroODR(ODR odr) {
 	if (writeRegister(UB0_REG_GYRO_CONFIG0, reg) < 0) {
 		return -2;
 	}
+
+	_gyroODR = static_cast<ODR>(reg & 0x0F);
+	
+	return 1;
+}
+
+int ICM42688::readGyroODR() {
+	// use low speed SPI for register setting
+	_useSPIHS = false;
+	setBank(0);
+	// read current register value
+	uint8_t reg;
+	if (readRegisters(UB0_REG_GYRO_CONFIG0, 1, &reg) < 0) {
+		return -1;
+	}
+	
+	_gyroODR = static_cast<ODR>(reg & 0x0F);
 
 	return 1;
 }
@@ -281,15 +342,15 @@ int ICM42688::getAGT() {  // modified to use getRawAGT()
 		return -1;
 	}
 
-	_t = (static_cast<float>(_rawT) / TEMP_DATA_REG_SCALE) + TEMP_OFFSET;
+	_t = convertTemp(_rawT);
 
-	_acc[0] = ((_rawAcc[0] * _accelScale) - _accB[0]) * _accS[0];
-	_acc[1] = ((_rawAcc[1] * _accelScale) - _accB[1]) * _accS[1];
-	_acc[2] = ((_rawAcc[2] * _accelScale) - _accB[2]) * _accS[2];
+	_acc[0] = convertAccX(_rawAcc[0]);
+	_acc[1] = convertAccY(_rawAcc[1]);
+	_acc[2] = convertAccZ(_rawAcc[2]);
 
-	_gyr[0] = (_rawGyr[0] * _gyroScale) - _gyrB[0];
-	_gyr[1] = (_rawGyr[1] * _gyroScale) - _gyrB[1];
-	_gyr[2] = (_rawGyr[2] * _gyroScale) - _gyrB[2];
+	_gyr[0] = convertGyrX(_rawGyr[0]);
+	_gyr[1] = convertGyrY(_rawGyr[1]);
+	_gyr[2] = convertGyrZ(_rawGyr[2]);
 
 	return 1;
 }
@@ -1064,57 +1125,41 @@ int ICM42688::testingFunction() {
 }
 
 /* Get Resolution FullScale */
-float ICM42688::getAccelRes() {  // read  ACCEL_CONFIG0 and get ACCEL_FS_SEL value
-	int   currentAccFS = getAccelFS();
-	float accRes;
-	switch (currentAccFS) {
+float ICM42688::getAccelRes() const {  // read  ACCEL_CONFIG0 and get ACCEL_FS_SEL value
+	switch (_accelFS) {
 	case ICM42688::AccelFS::gpm2:
-		accRes = 16.0f / (32768.0f);
-		break;
+		return 16.0f / (32768.0f);
 	case ICM42688::AccelFS::gpm4:
-		accRes = 4.0f / (32768.0f);
-		break;
+		return 4.0f / (32768.0f);
 	case ICM42688::AccelFS::gpm8:
-		accRes = 8.0f / (32768.0f);
-		break;
+		return 8.0f / (32768.0f);
 	case ICM42688::AccelFS::gpm16:
-		accRes = 16.0f / (32768.0f);
-		break;
+		return 16.0f / (32768.0f);
 	}
-	return accRes;
+	return 0.0;
 }
 
 /* Get Resolution FullScale */
-float ICM42688::getGyroRes() {
-	int   currentGyroFS = getGyroFS();
-	float gyroRes;
-	switch (currentGyroFS) {
+float ICM42688::getGyroRes() const {
+	switch (_gyroFS) {
 	case ICM42688::GyroFS::dps2000:
-		gyroRes = 2000.0f / 32768.0f;
-		break;
+		return 2000.0f / 32768.0f;
 	case ICM42688::GyroFS::dps1000:
-		gyroRes = 1000.0f / 32768.0f;
-		break;
+		return 1000.0f / 32768.0f;
 	case ICM42688::GyroFS::dps500:
-		gyroRes = 500.0f / 32768.0f;
-		break;
+		return 500.0f / 32768.0f;
 	case ICM42688::GyroFS::dps250:
-		gyroRes = 250.0f / 32768.0f;
-		break;
+		return 250.0f / 32768.0f;
 	case ICM42688::GyroFS::dps125:
-		gyroRes = 125.0f / 32768.0f;
-		break;
+		return 125.0f / 32768.0f;
 	case ICM42688::GyroFS::dps62_5:
-		gyroRes = 62.5f / 32768.0f;
-		break;
+		return 62.5f / 32768.0f;
 	case ICM42688::GyroFS::dps31_25:
-		gyroRes = 31.25f / 32768.0f;
-		break;
+		return 31.25f / 32768.0f;
 	case ICM42688::GyroFS::dps15_625:
-		gyroRes = 15.625f / 32768.0f;
-		break;
+		return 15.625f / 32768.0f;
 	}
-	return gyroRes;
+	return 0.0;
 }
 
 /* Self Test*/

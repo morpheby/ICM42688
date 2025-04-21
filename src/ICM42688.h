@@ -101,7 +101,9 @@ class ICM42688 {
      * @return     ret < 0 if error
      */
 	int setAccelFS(AccelFS fssel);
-	int getAccelFS();
+	AccelFS getAccelFS() const { return _accelFS; }
+	int readAccelFS();
+
 	/**
      * @brief      Sets the full scale range for the gyro
      *
@@ -110,7 +112,9 @@ class ICM42688 {
      * @return     ret < 0 if error
      */
 	int setGyroFS(GyroFS fssel);
-	int getGyroFS();
+	GyroFS getGyroFS() const { return _gyroFS; }
+	int readGyroFS();
+
 	/**
      * @brief      Set the ODR for accelerometer
      *
@@ -119,7 +123,8 @@ class ICM42688 {
      * @return     ret < 0 if error
      */
 	int setAccelODR(ODR odr);
-	int getAccelODR();
+	ODR getAccelODR() const { return _accelODR; }
+	int readAccelODR();
 
 	/**
      * @brief      Set the ODR for gyro
@@ -129,7 +134,8 @@ class ICM42688 {
      * @return     ret < 0 if error
      */
 	int setGyroODR(ODR odr);
-	int getGyroODR();
+	ODR getGyroODR() const { return _gyroODR; }
+	int readGyroODR();
 
 	int setFilters(bool gyroFilters, bool accFilters);
 
@@ -217,6 +223,14 @@ class ICM42688 {
      */
 	int16_t rawTemp() const { return _rawT; }
 
+	float convertAccX(int16_t raw) const { return ((raw * _accelScale) - _accB[0]) * _accS[0]; }
+	float convertAccY(int16_t raw) const { return ((raw * _accelScale) - _accB[1]) * _accS[1]; }
+	float convertAccZ(int16_t raw) const { return ((raw * _accelScale) - _accB[2]) * _accS[2]; }
+	float convertGyrX(int16_t raw) const { return (raw * _gyroScale) - _gyrB[0]; }
+	float convertGyrY(int16_t raw) const { return (raw * _gyroScale) - _gyrB[1]; }
+	float convertGyrZ(int16_t raw) const { return (raw * _gyroScale) - _gyrB[2]; }
+	float convertTemp(int16_t raw) const { return (static_cast<float>(raw) / TEMP_DATA_REG_SCALE) + TEMP_OFFSET; }
+
 	/**
      * @brief      Get raw temperature of gyro die
      *
@@ -242,8 +256,8 @@ class ICM42688 {
 	int   setAccXOffset(int16_t accXoffset);
 	int   setAccYOffset(int16_t accYoffset);
 	int   setAccZOffset(int16_t accZoffset);
-	float getAccelRes();
-	float getGyroRes();
+	float getAccelRes() const;
+	float getGyroRes() const;
 	int   setUIFilterBlock(UIFiltOrd gyroUIFiltOrder, UIFiltOrd accelUIFiltOrder);
 	int   setGyroNotchFilter(float gyroNFfreq_x, float gyroNFfreq_y, float gyroNFfreq_z, GyroNFBWsel gyro_nf_bw);  //
 	int   selfTest();
@@ -322,6 +336,10 @@ class ICM42688 {
 	///\brief Gyro calibration
 	float _gyroBD[3] = {};
 	float _gyrB[3]   = {};
+	
+	///\brief ODRs
+	ODR _accelODR = ODR::odr1k;
+	ODR _gyroODR = ODR::odr1k;
 
 	///\brief Constants
 	static constexpr uint8_t WHO_AM_I          = 0x47;  ///< expected value in UB0_REG_WHO_AM_I reg
