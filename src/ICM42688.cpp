@@ -439,9 +439,9 @@ int ICM42688_FIFO::readFifo() {
 			rawMeas[1] = (((int16_t)_buffer[2 + accIndex]) << 8) | _buffer[3 + accIndex];
 			rawMeas[2] = (((int16_t)_buffer[4 + accIndex]) << 8) | _buffer[5 + accIndex];
 			// transform and convert to float values
-			_axFifo[i] = ((rawMeas[0] * _accelScale) - _accB[0]) * _accS[0];
-			_ayFifo[i] = ((rawMeas[1] * _accelScale) - _accB[1]) * _accS[1];
-			_azFifo[i] = ((rawMeas[2] * _accelScale) - _accB[2]) * _accS[2];
+			_axFifo[i] = (rawMeas[0] * _accelScale) - _accB[0];
+			_ayFifo[i] = (rawMeas[1] * _accelScale) - _accB[1];
+			_azFifo[i] = (rawMeas[2] * _accelScale) - _accB[2];
 			_aSize     = numFrames;
 		}
 		if (_enFifoTemp) {
