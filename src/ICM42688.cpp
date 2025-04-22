@@ -621,19 +621,9 @@ float ICM42688::getAccelBiasX_mss() {
 	return _accB[0];
 }
 
-/* returns the accelerometer scale factor in the X direction */
-float ICM42688::getAccelScaleFactorX() {
-	return _accS[0];
-}
-
 /* returns the accelerometer bias in the Y direction, m/s/s */
 float ICM42688::getAccelBiasY_mss() {
 	return _accB[1];
-}
-
-/* returns the accelerometer scale factor in the Y direction */
-float ICM42688::getAccelScaleFactorY() {
-	return _accS[1];
 }
 
 /* returns the accelerometer bias in the Z direction, m/s/s */
@@ -641,27 +631,19 @@ float ICM42688::getAccelBiasZ_mss() {
 	return _accB[2];
 }
 
-/* returns the accelerometer scale factor in the Z direction */
-float ICM42688::getAccelScaleFactorZ() {
-	return _accS[2];
-}
-
 /* sets the accelerometer bias (m/s/s) and scale factor in the X direction */
-void ICM42688::setAccelCalX(float bias, float scaleFactor) {
+void ICM42688::setAccelCalX(float bias) {
 	_accB[0] = bias;
-	_accS[0] = scaleFactor;
 }
 
 /* sets the accelerometer bias (m/s/s) and scale factor in the Y direction */
-void ICM42688::setAccelCalY(float bias, float scaleFactor) {
+void ICM42688::setAccelCalY(float bias) {
 	_accB[1] = bias;
-	_accS[1] = scaleFactor;
 }
 
 /* sets the accelerometer bias (m/s/s) and scale factor in the Z direction */
-void ICM42688::setAccelCalZ(float bias, float scaleFactor) {
+void ICM42688::setAccelCalZ(float bias) {
 	_accB[2] = bias;
-	_accS[2] = scaleFactor;
 }
 
 /* writes a byte to ICM42688 register given a register address and data */

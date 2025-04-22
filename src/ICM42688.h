@@ -272,14 +272,12 @@ class ICM42688 {
 	void  setGyroBiasZ(float bias);
 	int   calibrateAccel();
 	float getAccelBiasX_mss();
-	float getAccelScaleFactorX();
 	float getAccelBiasY_mss();
-	float getAccelScaleFactorY();
 	float getAccelBiasZ_mss();
 	float getAccelScaleFactorZ();
-	void  setAccelCalX(float bias, float scaleFactor);
-	void  setAccelCalY(float bias, float scaleFactor);
-	void  setAccelCalZ(float bias, float scaleFactor);
+	void  setAccelCalX(float bias);
+	void  setAccelCalY(float bias);
+	void  setAccelCalZ(float bias);
 
  protected:
 	///\brief I2C Communication
