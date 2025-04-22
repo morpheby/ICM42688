@@ -223,9 +223,9 @@ class ICM42688 {
      */
 	int16_t rawTemp() const { return _rawT; }
 
-	float convertAccX(int16_t raw) const { return ((raw * _accelScale) - _accB[0]) * _accS[0]; }
-	float convertAccY(int16_t raw) const { return ((raw * _accelScale) - _accB[1]) * _accS[1]; }
-	float convertAccZ(int16_t raw) const { return ((raw * _accelScale) - _accB[2]) * _accS[2]; }
+	float convertAccX(int16_t raw) const { return (raw * _accelScale) - _accB[0]; }
+	float convertAccY(int16_t raw) const { return (raw * _accelScale) - _accB[1]; }
+	float convertAccZ(int16_t raw) const { return (raw * _accelScale) - _accB[2]; }
 	float convertGyrX(int16_t raw) const { return (raw * _gyroScale) - _gyrB[0]; }
 	float convertGyrY(int16_t raw) const { return (raw * _gyroScale) - _gyrB[1]; }
 	float convertGyrZ(int16_t raw) const { return (raw * _gyroScale) - _gyrB[2]; }
@@ -327,14 +327,9 @@ class ICM42688 {
 	GyroFS  _gyroFS  = dps2000;
 
 	///\brief Accel calibration
-	float _accBD[3]  = {};
 	float _accB[3]   = {};
-	float _accS[3]   = {1.0f, 1.0f, 1.0f};
-	float _accMax[3] = {};
-	float _accMin[3] = {};
 
 	///\brief Gyro calibration
-	float _gyroBD[3] = {};
 	float _gyrB[3]   = {};
 	
 	///\brief ODRs

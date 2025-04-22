@@ -234,7 +234,7 @@ int ICM42688::setGyroODR(ODR odr) {
 	}
 
 	_gyroODR = static_cast<ODR>(reg & 0x0F);
-	
+
 	return 1;
 }
 
@@ -512,6 +512,7 @@ void ICM42688_FIFO::getFifoTemperature_C(size_t* size, float* data) {
 int ICM42688::calibrateGyro() {
 	// set at a lower range (more resolution) since IMU not moving
 	const GyroFS current_fssel = _gyroFS;
+	float _gyroBD[3] = {};
 	if (setGyroFS(dps250) < 0) {
 		return -1;
 	}
@@ -573,59 +574,45 @@ this should be run for each axis in each direction (6 total) to find
 the min and max values along each */
 int ICM42688::calibrateAccel() {
 	// set at a lower range (more resolution) since IMU not moving
-	const AccelFS current_fssel = _accelFS;
-	if (setAccelFS(gpm2) < 0) {
-		return -1;
-	}
+	// const AccelFS current_fssel = _accelFS;
+	// float _accBD[3] = {};
+	// if (setAccelFS(gpm2) < 0) {
+	// 	return -1;
+	// }
 
-	// take samples and find min / max
-	_accBD[0] = 0;
-	_accBD[1] = 0;
-	_accBD[2] = 0;
-	for (size_t i = 0; i < NUM_CALIB_SAMPLES; i++) {
-		getAGT();
-		_accBD[0] += (accX() / _accS[0] + _accB[0]) / NUM_CALIB_SAMPLES;
-		_accBD[1] += (accY() / _accS[1] + _accB[1]) / NUM_CALIB_SAMPLES;
-		_accBD[2] += (accZ() / _accS[2] + _accB[2]) / NUM_CALIB_SAMPLES;
-		delay(1);
-	}
-	if (_accBD[0] > 0.9f) {
-		_accMax[0] = _accBD[0];
-	}
-	if (_accBD[1] > 0.9f) {
-		_accMax[1] = _accBD[1];
-	}
-	if (_accBD[2] > 0.9f) {
-		_accMax[2] = _accBD[2];
-	}
-	if (_accBD[0] < -0.9f) {
-		_accMin[0] = _accBD[0];
-	}
-	if (_accBD[1] < -0.9f) {
-		_accMin[1] = _accBD[1];
-	}
-	if (_accBD[2] < -0.9f) {
-		_accMin[2] = _accBD[2];
-	}
+	// // take samples
+	// _accBD[0] = 0;
+	// _accBD[1] = 0;
+	// _accBD[2] = 0;
+	// for (size_t i = 0; i < NUM_CALIB_SAMPLES; i++) {
+	// 	getAGT();
+	// 	_accBD[0] += (accX() + _accB[0]) / NUM_CALIB_SAMPLES;
+	// 	_accBD[1] += (accY() + _accB[1]) / NUM_CALIB_SAMPLES;
+	// 	_accBD[2] += (accZ() + _accB[2]) / NUM_CALIB_SAMPLES;
+	// 	delay(1);
+	// }
 
-	// find bias and scale factor
-	if ((abs(_accMin[0]) > 0.9f) && (abs(_accMax[0]) > 0.9f)) {
-		_accB[0] = (_accMin[0] + _accMax[0]) / 2.0f;
-		_accS[0] = 1 / ((abs(_accMin[0]) + abs(_accMax[0])) / 2.0f);
-	}
-	if ((abs(_accMin[1]) > 0.9f) && (abs(_accMax[1]) > 0.9f)) {
-		_accB[1] = (_accMin[1] + _accMax[1]) / 2.0f;
-		_accS[1] = 1 / ((abs(_accMin[1]) + abs(_accMax[1])) / 2.0f);
-	}
-	if ((abs(_accMin[2]) > 0.9f) && (abs(_accMax[2]) > 0.9f)) {
-		_accB[2] = (_accMin[2] + _accMax[2]) / 2.0f;
-		_accS[2] = 1 / ((abs(_accMin[2]) + abs(_accMax[2])) / 2.0f);
-	}
+	// // Subtract standard gravity from total vector
 
-	// recover the full scale setting
-	if (setAccelFS(current_fssel) < 0) {
-		return -4;
-	}
+
+	// // find bias and scale factor
+	// if ((abs(_accMin[0]) > 0.9f) && (abs(_accMax[0]) > 0.9f)) {
+	// 	_accB[0] = (_accMin[0] + _accMax[0]) / 2.0f;
+	// 	_accS[0] = 1 / ((abs(_accMin[0]) + abs(_accMax[0])) / 2.0f);
+	// }
+	// if ((abs(_accMin[1]) > 0.9f) && (abs(_accMax[1]) > 0.9f)) {
+	// 	_accB[1] = (_accMin[1] + _accMax[1]) / 2.0f;
+	// 	_accS[1] = 1 / ((abs(_accMin[1]) + abs(_accMax[1])) / 2.0f);
+	// }
+	// if ((abs(_accMin[2]) > 0.9f) && (abs(_accMax[2]) > 0.9f)) {
+	// 	_accB[2] = (_accMin[2] + _accMax[2]) / 2.0f;
+	// 	_accS[2] = 1 / ((abs(_accMin[2]) + abs(_accMax[2])) / 2.0f);
+	// }
+
+	// // recover the full scale setting
+	// if (setAccelFS(current_fssel) < 0) {
+	// 	return -4;
+	// }
 	return 1;
 }
 
